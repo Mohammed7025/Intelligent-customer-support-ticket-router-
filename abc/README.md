@@ -31,6 +31,21 @@ Incoming Ticket
 
 ---
 
+### Screenshot 1
+![Screenshot 1](images/t1.jpeg)
+
+### Screenshot 2
+![Screenshot 2](images/t2.jpeg)
+
+### Screenshot 3
+![Screenshot 3](images/t3.jpeg)
+
+### Screenshot 4
+![Screenshot 4](images/t4.jpeg)
+
+### Screenshot 5
+![Screenshot 5](images/t5.jpeg)
+
 ## Task coverage
 
 | Task | Requirement | Where it lives | How to verify |
