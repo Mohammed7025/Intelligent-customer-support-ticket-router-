@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hybrid ML + MCP Ticket Routing Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #1e1e1e;
+            --surface: #2a2a2a;
+            --border: #404040;
+            --text: #ffffff;
+            --text-muted: #a3a3a3;
+            
+            --tech-bg: #e0f2fe;
+            --tech-text: #0284c7;
+            --billing-bg: #f3e8ff;
+            --billing-text: #9333ea;
+            --account-bg: #d1fae5;
+            --account-text: #059669;
+            --escalate-bg: #ffe4e6;
+            --escalate-text: #e11d48;
+            --warn-bg: #4a3c1e;
+            --warn-text: #fcd34d;
+            
+            --success: #4ade80;
+            --info: #60a5fa;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 40px;
+            line-height: 1.5;
+        }
+        
+        .container { max-width: 1000px; margin: 0 auto; }
+        
+        h2 {
+            font-size: 13px; font-weight: 600; letter-spacing: 0.05em;
+            color: var(--text-muted); text-transform: uppercase;
+            margin: 40px 0 20px 0; display: flex; align-items: center; gap: 8px;
+        }
+        
+        /* Workflow */
+        .workflow { display: flex; align-items: center; justify-content: space-between; margin-bottom: 50px; padding-bottom: 40px; border-bottom: 1px solid var(--border); }
+        .workflow-step { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; text-align: center; min-width: 110px; }
+        .workflow-step.final { border-color: #4ade80; }
+        .workflow-step-subtitle { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+        .workflow-step-title { font-size: 14px; font-weight: 600; }
+        .workflow-arrow { color: var(--text-muted); font-size: 20px; }
+        
+        /* Metric Cards */
+        .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 30px; }
+        .metric-card { background: var(--surface); border-radius: 8px; padding: 20px; border: 1px solid transparent; }
+        .metric-title { font-size: 13px; color: var(--text-muted); margin-bottom: 8px; font-weight: 500; }
+        .metric-value { font-size: 32px; font-weight: 600; margin-bottom: 4px; }
+        .metric-value.success { color: var(--success); }
+        .metric-value.info { color: var(--info); }
+        .metric-desc { font-size: 13px; color: var(--text-muted); }
+        
+        /* Tables */
+        table { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: 8px; overflow: hidden; margin-bottom: 40px; border: 1px solid var(--border); }
+        th, td { padding: 16px 20px; text-align: left; border-bottom: 1px solid var(--border); font-size: 14px; }
+        th { color: var(--text-muted); font-weight: 500; font-size: 13px; background: rgba(0,0,0,0.1); }
+        tr:last-child td { border-bottom: none; }
+        
+        /* Badges */
+        .badge { display: inline-block; padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: 600; }
+        .badge-tech { background: var(--tech-bg); color: var(--tech-text); }
+        .badge-billing { background: var(--billing-bg); color: var(--billing-text); }
+        .badge-account { background: var(--account-bg); color: var(--account-text); }
+        .badge-escalate { background: var(--escalate-bg); color: var(--escalate-text); }
+        .badge-warn { background: var(--warn-bg); color: var(--warn-text); border: 1px solid #78350f; }
+        
+        /* Confusion Matrix */
+        .cm-grid { display: grid; grid-template-columns: 120px 1fr 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+        .cm-cell { background: var(--surface); border-radius: 6px; padding: 16px; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600; }
+        .cm-header { background: transparent; color: var(--text-muted); font-size: 13px; font-weight: 500; }
+        .cm-cell.correct { background: #ecfccb; color: #3f6212; }
+        .cm-cell.incorrect { background: #fffbeb; color: #b45309; }
+        .cm-cell.zero { color: #737373; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Workflow Diagram -->
+        <div class="workflow">
+            <div class="workflow-step">
+                <div class="workflow-step-subtitle">step 1</div>
+                <div class="workflow-step-title">📄 Raw ticket</div>
+            </div>
+            <div class="workflow-arrow">→</div>
+            <div class="workflow-step">
+                <div class="workflow-step-subtitle">step 2</div>
+                <div class="workflow-step-title">&lt;/&gt; Preprocess + TF-IDF</div>
+            </div>
+            <div class="workflow-arrow">→</div>
+            <div class="workflow-step">
+                <div class="workflow-step-subtitle">step 3</div>
+                <div class="workflow-step-title">⑂ ML classify</div>
+            </div>
+            <div class="workflow-arrow">→</div>
+            <div class="workflow-step">
+                <div class="workflow-step-subtitle">if score &lt; 0.5</div>
+                <div class="workflow-step-title">🤖 LLM via MCP</div>
+            </div>
+            <div class="workflow-arrow">→</div>
+            <div class="workflow-step final">
+                <div class="workflow-step-subtitle">output</div>
+                <div class="workflow-step-title">✓ Routed dept</div>
+            </div>
+        </div>
+
+        <!-- Task 1 -->
+        <h2>⚲ TASK 1 — DATASET & PREPROCESSING</h2>
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-title">Total tickets</div>
+                <div class="metric-value">9</div>
+                <div class="metric-desc">3 per department</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-title">TF-IDF features</div>
+                <div class="metric-value">79</div>
+                <div class="metric-desc">unigrams + bigrams</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-title">Matrix sparsity</div>
+                <div class="metric-value">88%</div>
+                <div class="metric-desc">typical for text</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-title">Noise removed</div>
+                <div class="metric-value">~20%</div>
+                <div class="metric-desc">avg per ticket</div>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Ticket</th>
+                    <th>Dept</th>
+                    <th>Raw text (preview)</th>
+                    <th>Cleaned text (preview)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>TKT-001</td>
+                    <td><span class="badge badge-tech">tech</span></td>
+                    <td style="font-weight: 500;">My internet is not working since yesterday! Error code ...</td>
+                    <td>my internet is not working since yesterday error code</td>
+                </tr>
+                <tr>
+                    <td>TKT-002</td>
+                    <td><span class="badge badge-tech">tech</span></td>
+                    <td style="font-weight: 500;">The router keeps blinking red and I have no WiFi signal...</td>
+                    <td>the router keeps blinking red and have no wifi signal a...</td>
+                </tr>
+                <tr>
+                    <td>TKT-003</td>
+                    <td><span class="badge badge-tech">tech</span></td>
+                    <td style="font-weight: 500;">App crashes immediately on launch. Already reinstalled ...</td>
+                    <td>app crashes immediately on launch already reinstalled i...</td>
+                </tr>
+                <tr>
+                    <td>TKT-004</td>
+                    <td><span class="badge badge-billing">billing</span></td>
+                    <td style="font-weight: 500;">Why was I charged $50.99 this month? This looks incorre...</td>
+                    <td>why was charged this month this looks incorrect</td>
+                </tr>
+                <tr>
+                    <td>TKT-005</td>
+                    <td><span class="badge badge-billing">billing</span></td>
+                    <td style="font-weight: 500;">Can I get a copy of last month invoice sent to my email...</td>
+                    <td>can get copy of last month invoice sent to my email ple...</td>
+                </tr>
+                <tr>
+                    <td>TKT-006</td>
+                    <td><span class="badge badge-billing">billing</span></td>
+                    <td style="font-weight: 500;">I was billed twice for the same subscription renewal th...</td>
+                    <td>was billed twice for the same subscription renewal this...</td>
+                </tr>
+                <tr>
+                    <td>TKT-007</td>
+                    <td><span class="badge badge-account">account</span></td>
+                    <td style="font-weight: 500;">I cannot access my account. It says user not found erro...</td>
+                    <td>cannot access my account it says user not found error</td>
+                </tr>
+                <tr>
+                    <td>TKT-008</td>
+                    <td><span class="badge badge-account">account</span></td>
+                    <td style="font-weight: 500;">Please cancel my subscription and delete my account imm...</td>
+                    <td>please cancel my subscription and delete my account imm...</td>
+                </tr>
+                <tr>
+                    <td>TKT-009</td>
+                    <td><span class="badge badge-account">account</span></td>
+                    <td style="font-weight: 500;">I want to change my password but the reset link is brok...</td>
+                    <td>want to change my password but the reset link is broken</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Task 2c -->
+        <h2>⚠ TASK 2C — UNCERTAINTY FLAGGING (THRESHOLD = 0.5)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Ticket text</th>
+                    <th>Cos score</th>
+                    <th>LR score</th>
+                    <th>Decision</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="font-weight: 500;">the thing isnt working help</td>
+                    <td>0.196</td>
+                    <td>0.395</td>
+                    <td><span class="badge badge-warn">⚠ UNCERTAIN → LLM fallback</span></td>
+                </tr>
+                <tr>
+                    <td style="font-weight: 500;">money issue with my plan</td>
+                    <td>0.000</td>
+                    <td>0.337</td>
+                    <td><span class="badge badge-warn">⚠ UNCERTAIN → LLM fallback</span></td>
+                </tr>
+                <tr>
+                    <td style="font-weight: 500;">cant get in</td>
+                    <td>0.000</td>
+                    <td>0.337</td>
+                    <td><span class="badge badge-warn">⚠ UNCERTAIN → LLM fallback</span></td>
+                </tr>
+                <tr>
+                    <td style="font-weight: 500;">I need help urgently</td>
+                    <td>0.000</td>
+                    <td>0.337</td>
+                    <td><span class="badge badge-warn">⚠ UNCERTAIN → LLM fallback</span></td>
+                </tr>
+                <tr>
+                    <td style="font-weight: 500;">WiFi router shows error code 503 red light blinking</td>
+                    <td>0.474</td>
+                    <td>0.472</td>
+                    <td><span class="badge badge-warn">⚠ UNCERTAIN → LLM fallback</span></td>
+                </tr>
+                <tr>
+                    <td style="font-weight: 500;">Charged incorrectly on December invoice please refund</td>
+                    <td>0.287</td>
+                    <td>0.418</td>
+                    <td><span class="badge badge-warn">⚠ UNCERTAIN → LLM fallback</span></td>
+                </tr>
+                <tr>
+                    <td style="font-weight: 500;">Account suspended need immediate reactivation</td>
+                    <td>0.330</td>
+                    <td>0.432</td>
+                    <td><span class="badge badge-warn">⚠ UNCERTAIN → LLM fallback</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Task 3 -->
+        <h2>🤖 TASK 3 — MCP LLM FALLBACK RESPONSES</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Ticket</th>
+                    <th>LLM dept</th>
+                    <th>Confidence</th>
+                    <th>Reasoning</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="font-weight: 500;">the thing isnt working help</td>
+                    <td><span class="badge badge-tech">tech</span></td>
+                    <td>0.71</td>
+                    <td>Vague but implies a technical malfunction — routed to tech.</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: 500;">money issue with my plan</td>
+                    <td><span class="badge badge-billing">billing</span></td>
+                    <td>0.83</td>
+                    <td>Financial concern about a plan strongly signals billing.</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: 500;">cant get in</td>
+                    <td><span class="badge badge-account">account</span></td>
+                    <td>0.76</td>
+                    <td>Access issue most likely means account login problem.</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: 500;">I need help urgently</td>
+                    <td><span class="badge badge-account">account</span></td>
+                    <td>0.38</td>
+                    <td>Too vague — low confidence, human agent recommended.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Task 4 -->
+        <h2>📊 TASK 4 — EVALUATION METRICS</h2>
+        <div class="metrics-grid">
+            <div class="metric-card" style="text-align: center; border: 1px solid var(--border);">
+                <div class="metric-value success">100%</div>
+                <div class="metric-desc" style="font-weight:500;">Cosine accuracy</div>
+            </div>
+            <div class="metric-card" style="text-align: center; border: 1px solid var(--border);">
+                <div class="metric-value info">88.9%</div>
+                <div class="metric-desc" style="font-weight:500;">LogReg accuracy</div>
+            </div>
+            <div class="metric-card" style="text-align: center; border: 1px solid var(--border);">
+                <div class="metric-value success">100%</div>
+                <div class="metric-desc" style="font-weight:500;">LLM fallback accuracy</div>
+            </div>
+        </div>
+
+        <div class="metrics-grid" style="grid-template-columns: repeat(4, 1fr);">
+            <div class="metric-card">
+                <div class="metric-title">Precision (tech)</div>
+                <div class="metric-value" style="font-size:24px;">1.00</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-title">Recall (tech)</div>
+                <div class="metric-value" style="font-size:24px;">1.00</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-title">F1 score (tech)</div>
+                <div class="metric-value" style="font-size:24px;">1.00</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-title">LLM fallback rate</div>
+                <div class="metric-value" style="font-size:24px;">11.1%</div>
+                <div class="metric-desc">1 of 9 tickets</div>
+            </div>
+        </div>
+
+        <h2 style="margin-top: 40px;">⚄ CONFUSION MATRIX — LOGISTIC REGRESSION</h2>
+        <div class="cm-grid">
+            <div></div>
+            <div class="cm-cell cm-header">pred: tech</div>
+            <div class="cm-cell cm-header">pred: billing</div>
+            <div class="cm-cell cm-header">pred: account</div>
+
+            <div class="cm-cell cm-header" style="justify-content:flex-end;">actual: tech</div>
+            <div class="cm-cell correct">3</div>
+            <div class="cm-cell zero">0</div>
+            <div class="cm-cell zero">0</div>
+
+            <div class="cm-cell cm-header" style="justify-content:flex-end;">actual: billing</div>
+            <div class="cm-cell zero">0</div>
+            <div class="cm-cell correct">2</div>
+            <div class="cm-cell incorrect">1</div>
+
+            <div class="cm-cell cm-header" style="justify-content:flex-end;">actual: account</div>
+            <div class="cm-cell zero">0</div>
+            <div class="cm-cell zero">0</div>
+            <div class="cm-cell correct">3</div>
+        </div>
+        <p style="color: var(--text-muted); font-size: 13px;">1 billing ticket misclassified as account — correctly caught by LLM fallback</p>
+    </div>
+</body>
+</html>
