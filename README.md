@@ -3,17 +3,19 @@ Hybrid ML &amp; MCP Ticket Routing System automates customer support ticket clas
 
 ## Screenshots
 
+
+
 ### Screenshot 1
-![Screenshot 1](images/t1.png)
+![Screenshot 1](images/t1.jpeg)
 
 ### Screenshot 2
-![Screenshot 2](images/t2.png)
+![Screenshot 2](images/t2.jpeg)
 
 ### Screenshot 3
-![Screenshot 3](images/t3.png)
+![Screenshot 3](images/t3.jpeg)
 
 ### Screenshot 4
-![Screenshot 4](images/t4.png)
+![Screenshot 4](images/t4.jpeg)
 
 ### Screenshot 5
-![Screenshot 5](images/t5.png)
+![Screenshot 5](images/t5.jpeg)
